@@ -1,10 +1,8 @@
+require 'rubygems'
 require 'highline/import'
 require 'send_gmail'
 
-def get_password(username)
-  password = ask("password for #{username}:") { |q| q.echo = false }
-  password
-end
+##### Settings ########
 
 # This field must be your Gmail account
 username = "your_gmail_account@gmail.com"
@@ -23,9 +21,31 @@ to = {
   "john@doe.com" => "John",
   "sally@ssmith.com" => "Dr. Smith"
 }
+
+########################
+########################
+
+def get_password(username)
+  password = ask("password for #{username}:") { |q| q.echo = false }
+  password
+end
+
+tries = 3
+begin
+  file = ask("file containing message: ").chomp
+  message = File.read(file)
+rescue Errno::ENOENT
+  tries -= 1
+  if(tries > 0)
+    puts "File not found. Please try again."
+    retry
+  else
+    puts "File not found. Quitting"
+    exit
+  end
+end
+
 salutation = ",\n\n"
-file = ask("file containing message: ").chomp
-message = File.read(file)
 puts "To: #{to.map{|k,v| "#{k} (#{v})"}.join(" ,")}"
 puts "From: #{from}"
 puts "CC: #{cc}"
@@ -39,14 +59,24 @@ if(continue=="yes")
     to.each do |email,name|
       body = name+salutation+message
       puts "Sending to #{name} at #{email}"
-      SendGMail.send_gmail(:to => email,
-                           :subject => subject,
-                           :body => body,
-                           :password => password,
-                           :domain => domain,
-                           :from => from,
-                           :cc => cc,
-                           :user_name => username)
+      begin
+        SendGMail.send_gmail(:to => email,
+                             :subject => subject,
+                             :body => body,
+                             :password => password,
+                             :domain => domain,
+                             :from => from,
+                             :cc => cc,
+                             :user_name => username)
+      rescue Timeout::Error
+        puts "Sending message to #{email} timed out. Retrying"
+        sleep(3)
+        retry
+      rescue SocketError
+        puts "Cannot reach Gmail. Retrying"
+        sleep(3)
+        retry
+      end
     puts "Messages sent."
   end
   rescue Net::SMTPAuthenticationError, Net::SMTPUnknownError
@@ -56,7 +86,7 @@ if(continue=="yes")
       password=get_password(username)
       retry
     else
-      puts "Got 3 incorect passwords. Quitting"
+      puts "Got #{tries} incorect passwords. Quitting"
     end
   end
 else

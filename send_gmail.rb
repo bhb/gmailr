@@ -41,7 +41,6 @@ module SendGMail
     main=mail
     main=TMail::Mail.new
     main.body = hsh[:body]
-    puts main.body
     main.set_content_type('text/plain', nil, 'charset'=>'utf-8')
     mail.parts.push(main)
 
