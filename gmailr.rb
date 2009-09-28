@@ -55,6 +55,7 @@ continue = ask("Is this message OK? [yes/no]:")
 if(continue=="yes")
   password = get_password(username)
   tries = 3
+  no_more_retries =  "Got #{tries} incorrect passwords. Quitting"
   begin
     to.each do |email,name|
       body = name+salutation+message
@@ -86,7 +87,7 @@ if(continue=="yes")
       password=get_password(username)
       retry
     else
-      puts "Got #{tries} incorect passwords. Quitting"
+      puts no_more_retries
     end
   end
 else
