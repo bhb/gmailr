@@ -1,37 +1,39 @@
 require 'rubygems'
 require 'highline/import'
 require 'send_gmail'
+require 'yaml'
+require 'erb'
 
-##### Settings ########
+# For instructions on configuring gmailer, see the 'Settings' 
+# section below
 
-# This field must be your Gmail account
-username = "your_gmail_account@gmail.com"
-
-# This can be another email address (in my case, ben@devver.net)
-from = "you@another_domain.com"
-domain = "gmail.com"
-
-# Add any addresses you would like CCed
-cc = ""
-
-subject = "[Your subject here]"
-
-# Fill this hash with email addresses and salutations. 
-to = {
-  "john@doe.com" => "John",
-  "sally@ssmith.com" => "Dr. Smith"
-}
-
-########################
-########################
+##### Helper methods #####
 
 def get_password(username)
   password = ask("password for #{username}:") { |q| q.echo = false }
   password
 end
 
+def load_config(filename)
+  raw_config = File.read(filename)
+  erb_config = ERB.new(raw_config).result
+  config = YAML.load(erb_config)
+  config
+end
+
+def convert_recipients(array_of_hashes)
+  array_of_hashes.inject({}) do |new_hash, hsh|
+    new_hash[hsh['email']] = hsh['name']
+    new_hash
+  end
+end
+
+####### Init ##############
+
 tries = 3
 begin
+  config_file = ask("config file: ").chomp
+  config = load_config(config_file)
   file = ask("file containing message: ").chomp
   message = File.read(file)
 rescue Errno::ENOENT
@@ -44,6 +46,38 @@ rescue Errno::ENOENT
     exit
   end
 end
+
+######## Settings ########
+
+# You should set up your config in a YAML file
+# The YAML file can use ERB
+
+# This field must be your Gmail account
+username = config['username']
+
+# This can be another email address
+from = config['from']
+
+# This should stay the same
+domain = "gmail.com"
+
+# Add any addresses you would like CCed
+# YAML will look like:
+# cc: [address1, address2]
+cc = config['cc'].join(", ")
+
+subject = config['subject']
+
+# Fill this hash with email addresses and salutations. 
+# The YAML should look like
+# to:
+#   - name: John
+#     email: john@doe.com
+#   - name: Dr. Smith
+#     email: sally@ssmith.com
+to = convert_recipients(config['to'])
+
+########################
 
 salutation = ",\n\n"
 puts "To: #{to.map{|k,v| "#{k} (#{v})"}.join(" ,")}"
