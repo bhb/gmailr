@@ -83,8 +83,8 @@ if(continue=="yes")
         sleep(3)
         retry
       end
-    puts "Messages sent."
-  end
+      puts "Messages sent."
+    end
   rescue Net::SMTPAuthenticationError, Net::SMTPUnknownError
     puts "Incorrect password"
     tries -= 1
