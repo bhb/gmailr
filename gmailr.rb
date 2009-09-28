@@ -58,7 +58,12 @@ if(continue=="yes")
   no_more_retries =  "Got #{tries} incorrect passwords. Quitting"
   begin
     to.each do |email,name|
-      body = name+salutation+message
+      body = nil
+      if(name.to_s.empty?)
+        body = message
+      else
+        body = name+salutation+message
+      end
       puts "Sending to #{name} at #{email}"
       begin
         SendGMail.send_gmail(:to => email,
