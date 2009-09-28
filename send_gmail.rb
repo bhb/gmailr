@@ -36,6 +36,7 @@ module SendGMail
     mail.date=Time.now
     mail.from = hsh[:from]
     mail.cc = hsh[:cc]
+    mail.bcc = hsh[:bcc]
     mail.subject=hsh[:subject]
 
     main=mail
@@ -72,7 +73,7 @@ module SendGMail
     private
     def do_start(helodomain, user, secret, authtype)
       raise IOError, 'SMTP session already started' if @started
-      check_auth_args user, secret, authtype if user or secret
+      check_auth_args user, secret if user or secret
 
       sock = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
       @socket = Net::InternetMessageIO.new(sock)
